@@ -243,7 +243,7 @@ namespace Assets.IntruderMM.Editor
             AddProxyMenuItem(proxyMenu, "Gamemode/Hack/Hack Node", "Assets/IntruderMM/Prefabs/HackNodeProxy.prefab");
             AddProxyMenuItem(proxyMenu, "Generic/Remote Mortar", "Assets/IntruderMM/Prefabs/RemoteMortar.prefab");
             AddProxyMenuItem(proxyMenu, "Generic/Sentry Turret", "Assets/IntruderMM/Prefabs/SentryTurret.prefab");
-            AddProxyMenuItem(proxyMenu, "Generic/Truck", "Assets/IntruderMM/Prefabs/Proxy/Truck.prefab");
+            AddProxyMenuItem(proxyMenu, "Generic/Truck", "Assets/IntruderMM/Prefabs/Truck.prefab");
             AddProxyMenuItem(proxyMenu, "Generic/Pickup", "Assets/IntruderMM/Prefabs/Pickup.prefab");
             AddProxyMenuItem(proxyMenu, "Generic/Glass", "Assets/IntruderMM/Prefabs/GlassProxy.prefab");
             AddProxyMenuItem(proxyMenu, "Generic/Observe Camera", "Assets/IntruderMM/Prefabs/ObserveCamProxy.prefab");
