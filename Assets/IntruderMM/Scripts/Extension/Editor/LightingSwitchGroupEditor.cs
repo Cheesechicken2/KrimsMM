@@ -16,121 +16,125 @@ public class LightingSwitchGroupEditor : Editor
         customFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/IntruderMM/Scripts/Extension/Editor/GUI/Font/ShareTechMono-Regular.ttf");
     }
 
-    public override void OnInspectorGUI()
+    private void AutomateSetup()
     {
-        if (customSkin != null)
-        {
-            GUI.skin = customSkin;
-        }
-
-        if (customFont != null)
-        {
-            GUIStyle fontStyle = new GUIStyle(GUI.skin.label);
-            fontStyle.font = customFont;
-            GUI.skin.label = fontStyle;
-        }
-
         LightingSwitchGroup data = (LightingSwitchGroup)target;
 
-        DrawDefaultInspector();
-
-        EditorGUILayout.Space();
-
-        if (GUILayout.Button("Get Lightmaps"))
+        if (string.IsNullOrEmpty(data.name) || data.renderSettings == null)
         {
-            if (data.name == "" || data.renderSettings == null)
-            {
-                Debug.Log("You need to setup the GroupName and the RenderSettings before you can get the Lightmaps");
-            }
-            else
-            {
-                data.lightmaps = new Texture2D[LightmapSettings.lightmaps.Length * 3];
-
-                string _parentFolderPath = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(data.renderSettings));
-                string _folderName = data.name + "-Lightmaps";
-                string folderPath = _parentFolderPath + "/" + _folderName;
-
-                if (AssetDatabase.IsValidFolder(folderPath)) AssetDatabase.DeleteAsset(folderPath);
-                AssetDatabase.CreateFolder(_parentFolderPath, _folderName);
-
-                for (int i = 0; i < LightmapSettings.lightmaps.Length; i++)
-                {
-                    AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(LightmapSettings.lightmaps[i].lightmapDir), folderPath + "/Lightmap-" + i.ToString() + "_comp_dir.png");
-                    AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(LightmapSettings.lightmaps[i].lightmapColor), folderPath + "/Lightmap-" + i.ToString() + "_comp_light.exr");
-
-                    Texture2D lightmapDir = AssetDatabase.LoadAssetAtPath<Texture2D>(folderPath + "/Lightmap-" + i.ToString() + "_comp_dir.png");
-                    Texture2D lightmapColor = AssetDatabase.LoadAssetAtPath<Texture2D>(folderPath + "/Lightmap-" + i.ToString() + "_comp_light.exr");
-
-                    data.lightmaps[i * 3] = lightmapDir;
-                    data.lightmaps[i * 3 + 1] = lightmapColor;
-                    data.lightmaps[i * 3 + 2] = null;
-                }
-            }
+            Debug.LogWarning("GroupName or RenderSettings is not set. Denying the automation..");
+            return;
         }
 
-        if (GUILayout.Button("Get Lightprobes"))
+        FetchLightmaps(data);
+        FetchLightProbes(data);
+        EnableLightMode(data);
+    }
+
+    private void FetchLightmaps(LightingSwitchGroup data)
+    {
+        data.lightmaps = new Texture2D[LightmapSettings.lightmaps.Length * 3];
+
+        string parentFolderPath = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(data.renderSettings));
+        string folderName = data.name + "-Lightmaps";
+        string folderPath = parentFolderPath + "/" + folderName;
+
+        if (AssetDatabase.IsValidFolder(folderPath)) AssetDatabase.DeleteAsset(folderPath);
+        AssetDatabase.CreateFolder(parentFolderPath, folderName);
+
+        for (int i = 0; i < LightmapSettings.lightmaps.Length; i++)
+        {
+            string dirPath = folderPath + $"/Lightmap-{i}_comp_dir.png";
+            string lightPath = folderPath + $"/Lightmap-{i}_comp_light.exr";
+
+            AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(LightmapSettings.lightmaps[i].lightmapDir), dirPath);
+            AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(LightmapSettings.lightmaps[i].lightmapColor), lightPath);
+
+            data.lightmaps[i * 3] = AssetDatabase.LoadAssetAtPath<Texture2D>(dirPath);
+            data.lightmaps[i * 3 + 1] = AssetDatabase.LoadAssetAtPath<Texture2D>(lightPath);
+            data.lightmaps[i * 3 + 2] = null;
+        }
+    }
+
+    private void FetchLightProbes(LightingSwitchGroup data)
+    {
+        if (LightmapSettings.lightProbes != null && LightmapSettings.lightProbes.bakedProbes != null)
         {
             data.lightprobes = new SphericalHarmonicsL2[LightmapSettings.lightProbes.bakedProbes.Length];
-
             for (int i = 0; i < LightmapSettings.lightProbes.bakedProbes.Length; i++)
             {
                 data.lightprobes[i] = LightmapSettings.lightProbes.bakedProbes[i];
             }
         }
-
-        if (GUILayout.Button("Enable this light mode"))
+        else
         {
-            data.gameObject.SetActive(true);
-            for (int i = 0; i < data.transform.parent.childCount; i++)
-            {
-                Transform child = data.transform.parent.GetChild(i);
-                if (child != data.transform) child.gameObject.SetActive(false);
-            }
-
-            //  set correct lightmaps
-            LightmapData[] lightmaparray = new LightmapData[data.lightmaps.Length / 3];
-            for (var i = 0; i < data.lightmaps.Length / 3; i++)
-            {
-                LightmapData mapdata = new LightmapData();
-
-                mapdata.lightmapDir = data.lightmaps[i * 3];
-                mapdata.lightmapColor = data.lightmaps[i * 3 + 1];
-
-                lightmaparray[i] = mapdata;
-            }
-            LightmapSettings.lightmaps = lightmaparray;
-
-            // set light probes
-            for (int i = 0; i < data.lightprobes.Length; i++)
-            {
-                LightmapSettings.lightProbes.bakedProbes[i] = data.lightprobes[i];
-            }
-
-            // set render settings
-            RenderSettings.fog = data.renderSettings.fog;
-            RenderSettings.fogStartDistance = data.renderSettings.fogStartDistance;
-            RenderSettings.fogEndDistance = data.renderSettings.fogEndDistance;
-            RenderSettings.fogMode = data.renderSettings.fogMode;
-            RenderSettings.fogColor = data.renderSettings.fogColor;
-            RenderSettings.fogDensity = data.renderSettings.fogDensity;
-            RenderSettings.ambientMode = data.renderSettings.ambientMode;
-            RenderSettings.ambientSkyColor = data.renderSettings.ambientSkyColor;
-            RenderSettings.ambientEquatorColor = data.renderSettings.ambientEquatorColor;
-            RenderSettings.ambientGroundColor = data.renderSettings.ambientGroundColor;
-            RenderSettings.ambientIntensity = data.renderSettings.ambientIntensity;
-            RenderSettings.ambientLight = data.renderSettings.ambientLight;
-            RenderSettings.subtractiveShadowColor = data.renderSettings.subtractiveShadowColor;
-            RenderSettings.skybox = data.renderSettings.skybox;
-            RenderSettings.sun = data.renderSettings.sun;
-            RenderSettings.ambientProbe = data.renderSettings.ambientProbe;
-            RenderSettings.customReflection = data.renderSettings.customReflection;
-            RenderSettings.reflectionIntensity = data.renderSettings.reflectionIntensity;
-            RenderSettings.reflectionBounces = data.renderSettings.reflectionBounces;
-            RenderSettings.defaultReflectionMode = data.renderSettings.defaultReflectionMode;
-            RenderSettings.defaultReflectionResolution = data.renderSettings.defaultReflectionResolution;
-            RenderSettings.haloStrength = data.renderSettings.haloStrength;
-            RenderSettings.flareStrength = data.renderSettings.flareStrength;
-            RenderSettings.flareFadeSpeed = data.renderSettings.flareFadeSpeed;
+            Debug.LogWarning("No Lightprobes found! either that or the script is fucked.");
+            data.lightprobes = new SphericalHarmonicsL2[0]; 
         }
+    }
+
+
+    private void EnableLightMode(LightingSwitchGroup data)
+    {
+        data.gameObject.SetActive(true);
+        for (int i = 0; i < data.transform.parent.childCount; i++)
+        {
+            Transform child = data.transform.parent.GetChild(i);
+            if (child != data.transform) child.gameObject.SetActive(false);
+        }
+
+        LightmapData[] lightmapArray = new LightmapData[data.lightmaps.Length / 3];
+        for (int i = 0; i < data.lightmaps.Length / 3; i++)
+        {
+            LightmapData mapData = new LightmapData
+            {
+                lightmapDir = data.lightmaps[i * 3],
+                lightmapColor = data.lightmaps[i * 3 + 1]
+            };
+            lightmapArray[i] = mapData;
+        }
+        LightmapSettings.lightmaps = lightmapArray;
+
+        for (int i = 0; i < data.lightprobes.Length; i++)
+        {
+            LightmapSettings.lightProbes.bakedProbes[i] = data.lightprobes[i];
+        }
+
+        ApplyRenderSettings(data.renderSettings);
+    }
+
+    private void ApplyRenderSettings(LightingSwitchRenderSettingsData settings)
+    {
+        RenderSettings.fog = settings.fog;
+        RenderSettings.fogStartDistance = settings.fogStartDistance;
+        RenderSettings.fogEndDistance = settings.fogEndDistance;
+        RenderSettings.fogMode = settings.fogMode;
+        RenderSettings.fogColor = settings.fogColor;
+        RenderSettings.fogDensity = settings.fogDensity;
+        RenderSettings.ambientMode = settings.ambientMode;
+        RenderSettings.ambientSkyColor = settings.ambientSkyColor;
+        RenderSettings.ambientEquatorColor = settings.ambientEquatorColor;
+        RenderSettings.ambientGroundColor = settings.ambientGroundColor;
+        RenderSettings.ambientIntensity = settings.ambientIntensity;
+        RenderSettings.ambientLight = settings.ambientLight;
+        RenderSettings.subtractiveShadowColor = settings.subtractiveShadowColor;
+        RenderSettings.skybox = settings.skybox;
+        RenderSettings.sun = settings.sun;
+        RenderSettings.ambientProbe = settings.ambientProbe;
+        RenderSettings.customReflection = settings.customReflection;
+        RenderSettings.reflectionIntensity = settings.reflectionIntensity;
+        RenderSettings.reflectionBounces = settings.reflectionBounces;
+        RenderSettings.defaultReflectionMode = settings.defaultReflectionMode;
+        RenderSettings.defaultReflectionResolution = settings.defaultReflectionResolution;
+        RenderSettings.haloStrength = settings.haloStrength;
+        RenderSettings.flareStrength = settings.flareStrength;
+        RenderSettings.flareFadeSpeed = settings.flareFadeSpeed;
+    }
+
+
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+        if (GUILayout.Button("Automate Setup")) AutomateSetup();
     }
 }

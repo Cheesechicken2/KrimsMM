@@ -1,25 +1,23 @@
+#if UNITY_EDITOR
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
 public class LightingSwitchGroupCreator : MonoBehaviour
-
 {
-#if UNITY_EDITOR
-    [MenuItem("Assets/Create/LightingSwitchRenderSettingsData")]
+    [MenuItem("Assets/Create/KrimMM/LightingSwitchRenderSettingsData")]
     public static void CreateMyAsset()
     {
         LightingSwitchRenderSettingsData asset = ScriptableObject.CreateInstance<LightingSwitchRenderSettingsData>();
 
-        string name = UnityEditor.AssetDatabase.GenerateUniqueAssetPath("Assets/LightingSwitchRenderSettingsData.asset");
-        AssetDatabase.CreateAsset(asset, name);
+        string path = AssetDatabase.GenerateUniqueAssetPath("Assets/LightingSwitchRenderSettingsData.asset");
+        AssetDatabase.CreateAsset(asset, path);
         AssetDatabase.SaveAssets();
 
         EditorUtility.FocusProjectWindow();
 
         Selection.activeObject = asset;
     }
-#endif
-
 }
+#endif

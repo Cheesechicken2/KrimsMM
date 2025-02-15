@@ -1,7 +1,7 @@
 ManifestFileVersion: 0
-CRC: 1232070838
+CRC: 984938309
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
-      Name: map.ilfw
+      Name: map.ilfm
       Dependencies: {}

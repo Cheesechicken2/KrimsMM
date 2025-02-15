@@ -79,7 +79,7 @@ public class PickupProxy : MonoBehaviour
         else
         {
             Mesh defaultMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-            Vector3 defaultScale = new Vector3(0.1f, 0.4f, 0.4f);
+            Vector3 defaultScale = new Vector3(1f, 1f, 1f);
             AssignMesh(defaultMesh, defaultScale);
         }
     }
